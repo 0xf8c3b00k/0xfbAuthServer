@@ -1,0 +1,7 @@
+{
+  "name": "0xfb-auth-server",
+  "version": "0.0.1",
+  "dependencies": {
+    "express": "2.5.9"
+  }
+}
