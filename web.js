@@ -86,17 +86,32 @@ app.get('/0xfb_client_wait', function(req, resp) {
       // with current client.
       var waitingStruct = {
         response: resp,
+        waiting: true, // False if it is 'writing'
         timeout: setTimeout(
           // Auth client didn't obtain access token in time, 
           // notify 0xfb client timed out, clear token from
           // waiting list.
           function() {
             console.log('%s timeout', token);
+            waitingStruct.waiting = false;
             resp.send(generateResponse(0, 'timed out'));
             delete waitingList[token];
           },
           CONFIG['client_waiting_timeout'])
       };
+
+      // Send a space each 25 second before it's timed out. To prevent
+      // heroku from timed out.
+      var resetKeepAliveTimer = function() {
+        setTimeout(function() {
+          if (waitingStruct.waiting) {
+            resp.write(' ');
+            resetKeepAliveTimer();
+          }
+        }, 25000);
+      };
+      resetKeepAliveTimer();
+
       console.log("Waiting started. token: %s, timeout: %d ms",
                   token, CONFIG['client_waiting_timeout']);
       waitingList[token] = waitingStruct;
@@ -149,6 +164,7 @@ app.get(CONFIG['fb_auth_result_path'], function(req, resp) {
 
       var ws = waitingList[token];
       clearTimeout(ws.timeout);
+      ws.waiting = false;
 
       if (q.hasOwnProperty('code')) {
         // We got 'code' from Facebook, so we can use this code to get
