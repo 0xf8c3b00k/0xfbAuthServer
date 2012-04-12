@@ -94,7 +94,7 @@ app.get('/0xfb_client_wait', function(req, resp) {
           function() {
             console.log('%s timeout', token);
             waitingStruct.waiting = false;
-            resp.send(generateResponse(0, 'timed out'));
+            resp.end(generateResponse(0, 'timed out'));
             delete waitingList[token];
           },
           CONFIG['client_waiting_timeout'])
@@ -191,7 +191,7 @@ app.get(CONFIG['fb_auth_result_path'], function(req, resp) {
             var access_token = fbRespStrPart[0].split('=')[1];
             var expires = fbRespStrPart[1].split('=')[1];
 
-            ws.response.send(generateResponse(1, 'auth successed', {
+            ws.response.end(generateResponse(1, 'auth successed', {
               'access_token': access_token,
               'expires' : expires,
             }));
@@ -201,18 +201,18 @@ app.get(CONFIG['fb_auth_result_path'], function(req, resp) {
         });
 
       } else {
-        we.response.send(generateResponse(0, 'auth failed'));
+        we.response.end(generateResponse(0, 'auth failed'));
       }
 
       // Remove handled token.
       delete waitingList[token];
 
-      resp.send(generateResponse(1, 'result is passed'));
+      resp.end(generateResponse(1, 'result is passed'));
     } else {
-      resp.send(generateResponse(0, 'token is invalid'));
+      resp.end(generateResponse(0, 'token is invalid'));
     }
   } else {
-    resp.send(generateResponse(0, 'token is not set'));
+    resp.end(generateResponse(0, 'token is not set'));
   }
 });
 
