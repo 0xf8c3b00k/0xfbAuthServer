@@ -201,7 +201,7 @@ app.get(CONFIG['fb_auth_result_path'], function(req, resp) {
         });
 
       } else {
-        we.response.end(generateResponse(0, 'auth failed'));
+        ws.response.end(generateResponse(0, 'auth failed'));
       }
 
       // Remove handled token.
