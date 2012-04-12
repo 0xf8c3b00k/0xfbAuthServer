@@ -188,13 +188,17 @@ app.get(CONFIG['fb_auth_result_path'], function(req, resp) {
             // Parse response
             console.log(fbRespStr);
             var fbRespStrPart = fbRespStr.split('&');
-            var access_token = fbRespStrPart[0].split('=')[1];
-            var expires = fbRespStrPart[1].split('=')[1];
+            if (fbRespStrPart.length > 1) {
+              var access_token = fbRespStrPart[0].split('=')[1];
+              var expires = fbRespStrPart[1].split('=')[1];
 
-            ws.response.end(generateResponse(1, 'auth successed', {
-              'access_token': access_token,
-              'expires' : expires,
-            }));
+              ws.response.end(generateResponse(1, 'auth successed', {
+                'access_token': access_token,
+                'expires' : expires,
+              }));
+            } else {
+              ws.response.end(generateResponse(0, 'auth error', JSON.parse(fbRespStr)));
+            }
           });
           // Here done the auth procedure.
 
