@@ -200,7 +200,7 @@ app.get(CONFIG['fb_auth_result_path'], function(req, resp) {
   }
 });
 
-var port = 40680; //process.env.PORT || 3000;
+var port = process.env.PORT || 3000;
 app.listen(port, function() {
   console.log("Listening on " + port);
 });
