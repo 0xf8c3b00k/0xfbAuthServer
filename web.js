@@ -58,7 +58,7 @@ var generateResponse = function(success, msg, payload) {
 var app = express.createServer(express.logger());
 
 app.get('/', function(req, resp) {
-  resp.send('Hello World!');
+  resp.redirect(CONFIG['0xfb_site']);
 });
 
 // For 0xfb client require a token. We send a token back (we may not

@@ -24,4 +24,7 @@ exports.config = {
   // Our app's address.
   'auth_server_host' : 'https://zeroxf8c3b00k.herokuapp.com',
 
+  // Our site
+  '0xfb_site' : 'http://0xf8c3b00k.github.com/0xf8c3b00k/',
+
 };
