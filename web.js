@@ -220,6 +220,10 @@ app.get(CONFIG['fb_auth_result_path'], function(req, resp) {
   }
 });
 
+app.get('/favicon.ico', function(req, res) {
+  res.redirect(CONFIG['0xfb_favicon']);
+});
+
 var port = process.env.PORT || 3000;
 app.listen(port, function() {
   console.log("Listening on " + port);

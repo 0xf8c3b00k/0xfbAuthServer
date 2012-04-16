@@ -27,4 +27,6 @@ exports.config = {
   // Our site
   '0xfb_site' : 'http://0xf8c3b00k.github.com/0xf8c3b00k/',
 
+  // Favicon
+  '0xfb_favicon' : 'https://github.com/0xf8c3b00k/art/raw/master/out/fb-app-16px.gif'
 };
