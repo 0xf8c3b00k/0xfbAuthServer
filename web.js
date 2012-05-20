@@ -22,6 +22,9 @@ var https = require('https');
 //    by Facebook. Server pass access_token to 0xfb client, and process
 //    is done.
 
+// Watch process:
+// 0xfb client polling 0xfb_client_watch with it's access token.
+// let facebook server call fb_server_watch_callback
 
 // A table that maps token to waitingStruct;
 var waitingList = {};
@@ -223,6 +226,15 @@ app.get(CONFIG['fb_auth_result_path'], function(req, resp) {
 app.get('/favicon.ico', function(req, res) {
   res.redirect(CONFIG['0xfb_favicon']);
 });
+
+app.get('/0xfb_client_watch',
+        require('./handlewatch.js').handleClientWatch.bind(this, app));
+
+app.get(CONFIG['server_watch_callback'],
+        require('./handlewatch.js').handleServerGetRequest.bind(this, app));
+
+app.post(CONFIG['server_watch_callback'],
+         require('./handlewatch.js').handleServerPostRequest.bind(this, app));
 
 var port = process.env.PORT || 3000;
 app.listen(port, function() {
