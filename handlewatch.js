@@ -190,7 +190,7 @@ exports.handleClientWatch = function(app, req, resp) {
     var client = {
       'resp' : resp,
       'timerId' : setTimeout(clientTimeout.bind(this, client), 25000),
-      'reqTime' : Data.now()
+      'reqTime' : Date.now()
     };
 
     // Find out user id
