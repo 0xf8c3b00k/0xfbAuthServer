@@ -1,7 +1,7 @@
 var url = require('url');
 var uuid = require('node-uuid');
 var https = require('https');
-var CONFIG = require('./config.js');
+var CONFIG = require('./config.js').config;
 
 var useridMap = {};
 

@@ -41,7 +41,7 @@ exports.config = {
   'subscription': {
     "post": [
       "likes",
-      "comments",
-    ],
+      "comments"
+    ]
   }
 };
