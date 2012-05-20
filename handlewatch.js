@@ -117,7 +117,7 @@ var subscribeNotification = function(at, userId, client) {
 
   var responseHandler = function(subObject, resp) {
     if (resp.statusCode != 200) {
-      console.error("Fail when subscribe: " + subObject);
+      console.error("Fail when subscribe: " + subObject + ", access token = " + at);
       fail = true;
       var data = '';
       resp.on('data', function(buf) {
