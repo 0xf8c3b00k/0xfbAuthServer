@@ -117,12 +117,14 @@ var subscribeNotification = function(at, userId, client) {
 
   var responseHandler = function(subObject, resp) {
     if (resp.statusCode != 200) {
+      console.error("Fail when subscribe: " + subObject);
       fail = true;
       var data = '';
       resp.on('data', function(buf) {
         data += buf.toString('utf8');
       });
       resp.on('end', function() {
+        console.error("error: " + data);
         failMsgs.push(JSON.parse(data));
       });
     } else {
