@@ -39,7 +39,7 @@ exports.config = {
 
   // Subscribe fields
   'subscription': {
-    'post': [
+    "post": [
       "likes",
       "comments",
     ],

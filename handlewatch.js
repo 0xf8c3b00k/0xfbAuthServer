@@ -1,5 +1,6 @@
 var url = require('url');
 var uuid = require('node-uuid');
+var https = require('https');
 var CONFIG = require('./config.js');
 
 var useridMap = {};
@@ -23,11 +24,12 @@ var sendErrorToClient = function(data, client) {
   });
 
   try {
+    var resp = client['resp'];
     resp.end(respStr);
     removeClient(client['userId'], client);
   } catch (e) {
-    console.error('Fail to send message to user, access token: %s, message: %s',
-                  at, respStr);
+    console.error('Fail to send message to user, message: %s', respStr);
+    console.error(e.toString());
   }
 };
 
@@ -85,6 +87,8 @@ var makePostBody = function(map) {
 };
 
 var subscribeNotification = function(at, userId, client) {
+  client['userId'] = userId;
+
   // If the user is already subscripted to event, we can just
   // add the client into our list.
   if (subscribed.hasOwnProperty(userId)) {
@@ -97,6 +101,7 @@ var subscribeNotification = function(at, userId, client) {
   var vt = getVerifyToken();
   var fail = false;
   var failMsgs = [];
+  console.log(JSON.stringify(CONFIG['subscription']));
   var left = Object.keys(CONFIG['subscription']).length;
   var subTime = Date.now();
 
@@ -164,20 +169,23 @@ var findUseridAndSubscribeNotification = function(at, client) {
       data += d.toString('utf8');
     });
     resp.on('end', function() {
+      var id = '';
+
       try {
         if (resp.statusCode == 200) {
           id = JSON.parse(data)['id'];
           useridMap[at] = id;
           console.log("Got id = " + id);
-          subscribeNotification(at, id, client);
         } else {
           throw 'Error parsing JSON from FB';
         }
       } catch (e) {
         sendErrorToClient({
-          'msg': 'fail to find user id'
+          "msg": e.toString()
         }, client);
       }
+
+      subscribeNotification(at, id, client);
     });
   });
 }
