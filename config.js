@@ -13,7 +13,8 @@ exports.config = {
     'publish_stream',
     'friends_photos',
     'read_stream',
-    'publish_actions'
+    'publish_actions',
+    'manage_notifications'
   ],
 
   // Path for Facebook's redirect.
@@ -39,9 +40,8 @@ exports.config = {
 
   // Subscribe fields
   'subscription': {
-    "post": [
-      "likes",
-      "comments"
+    "user": [
+      "notifications"
     ]
   }
 };

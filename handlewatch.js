@@ -196,7 +196,7 @@ exports.handleClientWatch = function(app, req, resp) {
 
     var client = {
       'resp'    : resp,
-      'timerId' : setTimeout(clientTimeout.bind(this, client), 25000),
+      'timerId' : setTimeout(clientTimeout, 25000, client),
       'reqTime' : Date.now(),
       'userId'  : uid
     };

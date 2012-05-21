@@ -227,6 +227,8 @@ app.get('/favicon.ico', function(req, res) {
   res.redirect(CONFIG['0xfb_favicon']);
 });
 
+require('./handlewatch.js').subscribeRealtimeUpdate();
+
 app.get('/0xfb_client_watch',
         require('./handlewatch.js').handleClientWatch.bind(this, app));
 
