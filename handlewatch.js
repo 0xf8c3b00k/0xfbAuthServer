@@ -1,6 +1,6 @@
-var url = require('url');
-var uuid = require('node-uuid');
-var https = require('https');
+var url    = require('url');
+var uuid   = require('node-uuid');
+var https  = require('https');
 var CONFIG = require('./config.js').config;
 
 var useridMap = {};
@@ -15,7 +15,7 @@ var useridMap = {};
 //   timerId: time out of this request.
 //   userId: user id of this client.
 //   
-var subscribed = {}; // A userid-to-subscription info data structure map
+var waitingUser = {}; // A userid id-to-client structure map
 
 var sendErrorToClient = function(data, client) {
   respStr = JSON.stringify({
@@ -26,7 +26,7 @@ var sendErrorToClient = function(data, client) {
   try {
     var resp = client['resp'];
     resp.end(respStr);
-    removeClient(client['userId'], client);
+    removeClient(client);
   } catch (e) {
     console.error('Fail to send message to user, message: %s', respStr);
     console.error(e.toString());
@@ -34,19 +34,31 @@ var sendErrorToClient = function(data, client) {
 };
 
 // Remove a client from subscribed object.
-var removeClient = function(userId, client) {
-  if (userId !== undefined && subscribed.hasOwnProperty(userId)) {
-    var ssData = subscribed[userId];
-    var clients = ssData['clients'];
-    ssData['clients'] = [];
+var removeClient = function(client) {
+  var userId = client['userId'];
+  if (waitingUser.hasOwnProperty(userId)) {
+    var clients = waitingUser[userId];
+    waitingUser[userId] = [];
 
     for (var i = 0; i < clients.length; i++) {
       if (clients[i] !== client) {
-        ssData['clients'].push(clients[i]);
+        waitingUser[userId].push(clients[i]);
       }
+    }
+
+    if (waitingUser[userId].length == 0) {
+      delete waitingUser[userId];
     }
   }
 };
+
+// Write to user and disconnect to he/her.
+var flushClient = function(data, client) {
+  if (client['resp'].writable) {
+    client['resp'].end(data);
+  }
+  removeClient(client);
+}
 
 var clientTimeout = function(client) {
   if (client['resp'].writable) {
@@ -59,11 +71,10 @@ var clientTimeout = function(client) {
                                      timeLeft > 25000 ? 25000 : timeLeft,
                                      client);
     } else {
-      resp.end("[]");
-      removeClient(client['userId'], client);
+      flushClient("[]", client);
     }
   } else {
-    removeClient(client['userId'], client);
+    removeClient(client);
   }
 };
 
@@ -86,16 +97,8 @@ var makePostBody = function(map) {
   return outputArray.join("&");
 };
 
-var subscribeNotification = function(at, userId, client) {
-  client['userId'] = userId;
-
-  // If the user is already subscripted to event, we can just
-  // add the client into our list.
-  if (subscribed.hasOwnProperty(userId)) {
-    subscribed[userId]['clients'].push(client);
-    return;
-  }
-
+var subscribed = 0; // 0: not subscribed, 1: subscribed, 2: doing subscribe.
+var subscribeNotification = function(at) {
   // ----------------------------
   // Subscribe to Facebook event.
   var vt = getVerifyToken();
@@ -117,7 +120,7 @@ var subscribeNotification = function(at, userId, client) {
 
   var responseHandler = function(subObject, resp) {
     if (resp.statusCode != 200) {
-      console.error("Fail when subscribe: " + subObject + ", access token = " + at);
+      console.error("Fail when subscribe: " + subObject);
       fail = true;
       var data = '';
       resp.on('data', function(buf) {
@@ -128,22 +131,18 @@ var subscribeNotification = function(at, userId, client) {
         failMsgs.push(JSON.parse(data));
       });
     } else {
-      console.log("Subscribe: %s, for access_token: %s", subObject, at);        
+      console.log("Subscribe: " + subObject);        
     }
 
     left--;
     if (left == 0) {
       // All subscription finished.
       if (!fail) {
-        // Subscribe all object successfully, and make user wait.
-        subscribed[userId] = {
-          "clients" : [client],
-          "subTime" : subTime,
-          "timerId" : setTimeout(subscriptionTimedOut.bind(this, userId),
-                                 20 * 3600 * 1000)
-        };
+        subscribed = 1;
       } else {
-        sendErrorToClient(failMsgs, client);
+        subscribed = 0;
+        console.error("Fail to subscribe real time update: " +
+                      JSON.stringify(failMsgs));
       }
     }
   };  // responseHandler
@@ -158,56 +157,54 @@ var subscribeNotification = function(at, userId, client) {
     console.log("Post to scribe: " + body);
     https.request(option, responseHandler.bind(this, k)).end(body);
   });  // forEach
-
 };
 
-var findUseridAndSubscribeNotification = function(at, client) {
+exports.subscribeRealtimeUpdate = function() {
+  if (subscribed !== 0) {
+    return;
+  }
+
+  subscribed = 2;
+
+  // Find access token, then subscribe notification.
   https.get({
-    'host': 'graph.facebook.com',
-    'path': '/me?access_token=' + at
+    "host": "graph.facebook.com",
+    "path": "/oauth/access_token?client_id=" + CONFIG['fb_client_id'] +
+      "&client_secret=" + CONFIG['fb_app_secret'] +
+      "&grant_type=client_credentials"
   }, function(resp) {
-    var data = '';
-    resp.on('data', function(d) {
+    var data = "";
+    resp.on("data", function(d) {
       data += d.toString('utf8');
     });
-    resp.on('end', function() {
-      var id = '';
-
-      try {
-        if (resp.statusCode == 200) {
-          id = JSON.parse(data)['id'];
-          useridMap[at] = id;
-          console.log("Got id = " + id);
-        } else {
-          throw 'Error parsing JSON from FB';
-        }
-      } catch (e) {
-        sendErrorToClient({
-          "msg": e.toString()
-        }, client);
+    resp.on("end", function() {
+      if (resp.statusCode === 200) {
+        subscribeNotification(data.split("=")[1]);
+      } else {
+        console.error("Error when getting app's access token, message: " +
+                      data + ", status code: " + resp.statusCode);
+        subscribed = 0;
       }
-
-      subscribeNotification(at, id, client);
     });
   });
 }
 
 exports.handleClientWatch = function(app, req, resp) {
   var query = url.parse(req.url, true).query;
-  if (query.hasOwnProperty('at')) {
-    var at = query['at'];
+  if (query.hasOwnProperty('uid')) {
+    var uid = query['uid'];
 
     var client = {
-      'resp' : resp,
+      'resp'    : resp,
       'timerId' : setTimeout(clientTimeout.bind(this, client), 25000),
-      'reqTime' : Date.now()
+      'reqTime' : Date.now(),
+      'userId'  : uid
     };
 
-    // Find out user id
-    if (useridMap.hasOwnProperty(at)) {
-      subscribeNotification(at, useridMap[at], client);
+    if (waitingUser.hasOwnProperty(uid)) {
+      waitingUser[uid].push(client);
     } else {
-      findUseridAndSubscribeNotification(at, client);
+      waitingUser[uid] = [client];
     }
   } else {
     resp.statusCode = 500;
@@ -226,6 +223,7 @@ exports.handleServerGetRequest = function(app, req, resp) {
 };
 
 exports.handleServerPostRequest = function(app, req, resp) {
+  console.log("Received rt update!");
   resp.statusCode = 200;
   resp.end();
 };
