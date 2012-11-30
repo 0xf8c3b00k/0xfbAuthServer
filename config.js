@@ -21,7 +21,7 @@ exports.config = {
   'fb_auth_result_path' : '/fb_auth_done',
 
   // Facebook app secret. DON'T SEND TO GITHUB
-  'fb_app_secret' : '',
+  'fb_app_secret' : process.env.APP_SECRET || '',
 
   // Our app's address.
   'auth_server_host' : 'https://zeroxf8c3b00k.herokuapp.com',
